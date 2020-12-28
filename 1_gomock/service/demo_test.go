@@ -97,5 +97,34 @@ func TestDemoService_InsertData(t *testing.T) {
 		assert.Equal(t, "success", data)
 		assert.Nil(t, err)
 	})
+}
 
+func TestDemoService_CheckAndUpdateData(t *testing.T) {
+	t.Run("should_return_nil_given_can_find_existed_data", func(t *testing.T) {
+		// given
+		// 1. 初始化 mock控制器
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		// 2. 初始化mock对象，并注入控制器
+		mockRepo := mock_gomock_db.NewMockRepository(ctrl)
+
+		// 3. 设定mock对象的返回值
+		retrieveName := mockRepo.EXPECT().Retrieve("name").Return([]byte("jasper"), nil)
+		mockRepo.EXPECT().Update("name", []byte("mike")).Return(nil).After(retrieveName) // update 在 retrieve 之后
+
+		// 指定调用顺序的方式二
+		//gomock.InOrder(
+		//	mockRepo.EXPECT().Retrieve("name").Return([]byte("jasper"), nil),
+		//	mockRepo.EXPECT().Update("name", []byte("mike")).Return(nil),
+		//)
+
+		demoSvr := &gomock_service.DemoService{Repo: mockRepo}
+
+		// when
+		err := demoSvr.CheckAndUpdateData("name", "mike")
+
+		// then
+		assert.Nil(t, err)
+	})
 }

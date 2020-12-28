@@ -1,6 +1,9 @@
 package gomock_service
 
-import gomock_db "go-mock-best-practice/1_gomock/db"
+import (
+	"fmt"
+	gomock_db "go-mock-best-practice/1_gomock/db"
+)
 
 type DemoService struct {
 	Repo gomock_db.Repository
@@ -22,4 +25,13 @@ func (d *DemoService) InsertData(key, val string) (string, error) {
 		return "", err
 	}
 	return "success", nil
+}
+
+func (d *DemoService) CheckAndUpdateData(key, val string) error {
+	data, err := d.Repo.Retrieve(key)
+	if data == nil || len(data) == 0 {
+		return fmt.Errorf("can not find key %s", key)
+	}
+	err = d.Repo.Update(key, []byte(val))
+	return err
 }
