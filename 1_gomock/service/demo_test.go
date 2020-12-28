@@ -20,7 +20,7 @@ func TestDemoService_InsertData(t *testing.T) {
 		mockRepo := mock_gomock_db.NewMockRepository(ctrl)
 
 		// 3. 设定mock对象的返回值
-		mockRepo.EXPECT().Create("name", []byte("jasper")).Return(errors.New("db connection error"))
+		mockRepo.EXPECT().Create("name", []byte("jasper")).Return(errors.New("db connection error")).Times(3)
 		demoSvr := &gomock_service.DemoService{Repo: mockRepo}
 
 		// when
@@ -42,7 +42,7 @@ func TestDemoService_InsertData(t *testing.T) {
 		mockRepo := mock_gomock_db.NewMockRepository(ctrl)
 
 		// 3. 设定mock对象的返回值
-		mockRepo.EXPECT().Create("name", []byte("jasper")).Return(errors.New("数据不存在"))
+		mockRepo.EXPECT().Create("name", []byte("jasper")).Return(errors.New("数据不存在")).Times(3)
 		demoSvr := &gomock_service.DemoService{Repo: mockRepo}
 
 		// when
@@ -65,6 +65,29 @@ func TestDemoService_InsertData(t *testing.T) {
 
 		// 3. 设定mock对象的返回值
 		mockRepo.EXPECT().Create("name", []byte("jasper")).Return(nil)
+		demoSvr := &gomock_service.DemoService{Repo: mockRepo}
+
+		// when
+		data, err := demoSvr.InsertData("name", "jasper")
+
+		// then
+		assert.Equal(t, "success", data)
+		assert.Nil(t, err)
+	})
+
+	t.Run("should_return_success_given_InsertData_when_repo_return_nil_at_the_third_time", func(t *testing.T) {
+		// given
+		// 1. 初始化 mock控制器
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		// 2. 初始化mock对象，并注入控制器
+		mockRepo := mock_gomock_db.NewMockRepository(ctrl)
+
+		// 3. 设定mock对象的返回值
+		mockRepo.EXPECT().Create("name", []byte("jasper")).Return(errors.New("db connection error")).Times(2) // 前两次返回错误
+		mockRepo.EXPECT().Create("name", []byte("jasper")).Return(nil)                                        // 第三次正常
+
 		demoSvr := &gomock_service.DemoService{Repo: mockRepo}
 
 		// when
