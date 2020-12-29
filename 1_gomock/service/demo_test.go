@@ -136,10 +136,10 @@ func TestDemoService_CheckConnect(t *testing.T) {
 		stubs := gostub.Stub(&gomock_service.GlobalCount, 10).
 			Stub(&gomock_service.Host, "https://www.bing.cn")
 		defer stubs.Reset()
-		demoSvr := &gomock_service.DemoService{}
+		demoSvr := &gomock_service.DemoService{Count: 8}
 
 		// when then
-		assert.Equal(t, "10:https://www.bing.cn:0", demoSvr.CheckConnect())
+		assert.Equal(t, "10:https://www.bing.cn:8", demoSvr.CheckConnect())
 	})
 }
 
@@ -157,5 +157,13 @@ func TestExec(t *testing.T) {
 		// then
 		assert.Equal(t, "xxx-vethName100-yyy", result)
 		assert.Nil(t, err)
+	})
+}
+
+func TestDestroyResource(t *testing.T) {
+	t.Run("过程打桩", func(t *testing.T) {
+		// given
+		stubs := gostub.StubFunc(&gomock_service.DestroyResource)
+		defer stubs.Reset()
 	})
 }

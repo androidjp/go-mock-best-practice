@@ -26,6 +26,11 @@ var Exec = func(cmd string, args ...string) (string, error) {
 	return "", nil
 }
 
+// 过程
+var DestroyResource = func() {
+	fmt.Println("清理资源等工作")
+}
+
 func (d *DemoService) InsertData(key, val string) (string, error) {
 	var err error
 	for i := 0; i < 3; i++ {
