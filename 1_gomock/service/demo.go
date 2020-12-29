@@ -5,8 +5,25 @@ import (
 	gomock_db "go-mock-best-practice/1_gomock/db"
 )
 
+var (
+	GlobalCount int
+	Host        string
+)
+
 type DemoService struct {
-	Repo gomock_db.Repository
+	Count int
+	Repo  gomock_db.Repository
+}
+
+// 输出此时的全局变量 和 成员变量
+// 方法
+func (d *DemoService) CheckConnect() string {
+	return fmt.Sprintf("%d:%s:%d", GlobalCount, Host, d.Count)
+}
+
+// 函数
+var Exec = func(cmd string, args ...string) (string, error) {
+	return "", nil
 }
 
 func (d *DemoService) InsertData(key, val string) (string, error) {
