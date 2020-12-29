@@ -56,3 +56,12 @@ https://www.jianshu.com/p/e3b2b1194830
 ```
 go get github.com/smartystreets/goconvey
 ```
+
+cd到测试文件所在目录，执行：
+```
+go test -v 
+```
+或者执行以下命令，弹出web页面：
+```
+goconvey
+```
