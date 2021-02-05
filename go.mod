@@ -3,6 +3,7 @@ module go-mock-best-practice
 go 1.15
 
 require (
+	bou.ke/monkey v1.0.2
 	github.com/gin-gonic/gin v1.6.3
 	github.com/steinfletcher/apitest v1.5.0
 	github.com/steinfletcher/apitest-jsonpath v1.6.0
