@@ -3,7 +3,6 @@ package gomock_service_test
 import (
 	"errors"
 	"github.com/golang/mock/gomock"
-	"github.com/prashantv/gostub"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
 	gomock_service "go-mock-best-practice/1_gomock/service"
@@ -137,43 +136,5 @@ func TestDemoService_CheckAndUpdateData(t *testing.T) {
 			// then
 			So(err, ShouldBeNil)
 		})
-	})
-}
-
-func TestDemoService_CheckConnect(t *testing.T) {
-	Convey("全局变量打桩", t, func() {
-		// given
-		stubs := gostub.Stub(&gomock_service.GlobalCount, 10).
-			Stub(&gomock_service.Host, "https://www.bing.cn")
-		defer stubs.Reset()
-		demoSvr := &gomock_service.DemoService{Count: 8}
-
-		// when then
-		So(demoSvr.CheckConnect(), ShouldEqual, "10:https://www.bing.cn:8")
-	})
-}
-
-func TestExec(t *testing.T) {
-	Convey("函数打桩", t, func() {
-		// given
-		stubs := gostub.Stub(&gomock_service.Exec, func(cmd string, args ...string) (string, error) {
-			return "xxx-vethName100-yyy", nil
-		})
-		defer stubs.Reset()
-
-		// when
-		result, err := gomock_service.Exec("hello")
-
-		// then
-		So(result, ShouldEqual, "xxx-vethName100-yyy")
-		So(err, ShouldBeNil)
-	})
-}
-
-func TestDestroyResource(t *testing.T) {
-	Convey("过程打桩", t, func() {
-		// given
-		stubs := gostub.StubFunc(&gomock_service.DestroyResource)
-		defer stubs.Reset()
 	})
 }
