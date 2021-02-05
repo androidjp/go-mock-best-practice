@@ -31,5 +31,8 @@ func (d *DemoController) GetMessage(ctx *gin.Context) {
 		fmt.Println("key:", k)
 		fmt.Println("val:", strings.Join(v, ""))
 	}
-	ctx.String(200, "Hello Mike!")
+	ctx.JSON(200, gin.H{
+		"code": 2000,
+		"msg":  "Hello Mike!",
+	})
 }
