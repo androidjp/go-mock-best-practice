@@ -1,48 +1,132 @@
-# 简单的mock--gomock
-gomock + mockgen
+# 使用场景
+- 全局变量打桩
+- 函数打桩
+- 过程打桩
+- 第三方库打桩
 
 # 安装
-```shell script
-go get github.com/golang/mock/gomock
 ```
-运行完后你会发现，在$GOPATH/src目录下有了github.com/golang/mock子目录，且在该子目录下有GoMock包和mockgen工具。
-```shell script
-cd $GOPATH/src/github.com/golang/mock/mockgen
-go build
+go get -v -u github.com/prashantv/gostub
 ```
-则在当前目录下生成了一个可执行程序mockgen。
 
-将mockgen程序移动到$GOPATH/bin目录下：
-```
-mv mockgen $GOPATH/bin
-```
-最后，尝试敲一下命令行：
-```shell script
-mockgen help
-```
-如果出现`-bash: mockgen: command not found`，表示你的环境变量PATH中没有配置`$GOPATH/bin`。
+# 关键用法
 
+### 1. 全局变量打桩
 
-# 文档
-```
-go doc github.com/golang/mock/gomock
-```
-[在线参考文档](https://link.jianshu.com/?t=http://godoc.org/github.com/golang/mock/gomock)
+对于全局变量：
 
-# 使用
-1. 在项目根目录打开命令行
-2. 找到对应目录下的某个将你要mock的接口所在的.go文件，生成对应的mock文件
+```Go
+var (
+  GlobalCount int
+  Host        string
+)
+```
+
+可以这样打桩：
+
+```Go
+// 全局变量 GlobalCount int 打桩
+// 全局变量 Host string 打桩
+stubs := gostub.Stub(&GlobalCount, 10).
+  Stub(&Host, "https://www.bing.cn")
+defer stubs.Reset() 
+```
+
+### 2. 函数打桩
+
+假设有个函数：
+
+```Go
+func Exec(cmd string, args ...string) (string, error) {
+  return "", nil
+}
+```
+
+那么，首先我要先变成这样的写法：
+
+```Go
+var Exec = func(cmd string, args ...string) (string, error) {
+  return "", nil
+}
+```
+
+以上写法不影响业务逻辑使用。
+
+然后再进行打桩：
+
+方式一：`StubFunc` 直接设置返回结果
+
+```Go
+stubs := gostub.StubFunc(&gomock_service.Exec, "xxx-vethName100-yyy", nil)
+defer stubs.Reset()
+```
+
+方式二：`Stub` 还能设置具体逻辑
+
+```Go
+stubs := gostub.Stub(&Exec, func(cmd string, args ...string) (string, error) {
+      return "xxx-vethName100-yyy", nil
+    })
+defer stubs.Reset()
+```
+
+### 3. 过程打桩
+
+对于一些没有返回值的函数，我们称为“过程”：
+
+```Go
+var DestroyResource = func() {
+  fmt.Println("清理资源等工作")
+}
+
+```
+
+打桩开始：
+
+方式一：`StubFunc` 直接设置返回结果（当你想这个过程啥都不做时，可以这样）
+
+```Go
+stubs := gostub.StubFunc(&gomock_service.DestroyResource)
+defer stubs.Reset()
+```
+
+方式二：`Stub` 还能设置具体逻辑
+
+```Go
+stubs := gostub.Stub(&gomock_service.DestroyResource, func() {
+      // do sth
+    })
+defer stubs.Reset()
+```
+
+### 4. 第三方库打桩
+
+很多第三方库的函数（注意，是函数，不是某个对象的某个成员方法），我们会经常使用，而在单元测试时不是我们的关注点，或者想他报错等，就可以选择打桩。
+
+1. 假如，我想打桩json的序列化和反序列化函数，那么，先在`adapter`包下定义`json.go`文件，然后声明对象：
+    ```Go
+    package adapter
+    
+    import (
+      "encoding/json"
+    )
+    
+    var Marshal = json.Marshal
+    var UnMarshal = json.Unmarshal 
     ```
-    mockgen -source=1_gomock/db/repository.go  > test/1_gomock/db/mock_repository.go
+2. 单元测试中，就可以直接使用`gostub.StubFunc`来进行打桩了：
+    ```Go
+    // given
+    var mikeStr = `{"name":"Jasper", "age":18}`
+    stubs := gostub.StubFunc(&adapter.Marshal, []byte(mikeStr), nil)
+    defer stubs.Reset()
+    
+    stu := &entity.Student{Name: "Mike", Age: 18}
+    
+    // when
+    res, err := stu.Print()
+    
+    // then
+    assert.Equal(t, "{\"name\":\"Jasper\", \"age\":18}", res)
+    assert.Nil(t, err)
     ```
-    当然，前提是你这个 mock_spider目录已经存在。
-
-3. 然后，使用这个mock文件中的 `MockXxx(t)` 方法
-
-# 参考文章
-https://www.jianshu.com/p/f4e773a1b11f
-
-
-
-# GoStub
-https://www.jianshu.com/p/70a93a9ed186
