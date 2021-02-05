@@ -29,15 +29,65 @@ go doc github.com/golang/mock/gomock
 ```
 [在线参考文档](https://link.jianshu.com/?t=http://godoc.org/github.com/golang/mock/gomock)
 
-# 使用
+# mockgen使用
 1. 在项目根目录打开命令行
 2. 找到对应目录下的某个将你要mock的接口所在的.go文件，生成对应的mock文件
     ```
     mockgen -source=1_gomock/db/repository.go  > test/1_gomock/db/mock_repository.go
     ```
-    当然，前提是你这个 mock_spider目录已经存在。
+    当然，前提是你这个 `test/1_gomock/db/`目录已经存在。
 
 3. 然后，使用这个mock文件中的 `MockXxx(t)` 方法
 
-# 参考文章
-https://www.jianshu.com/p/f4e773a1b11f
+
+# 关键用法
+## 接口打桩步骤
+1. 首先，使用mockgen工具，将对应的接口生成mock文件
+2. 然后，开始打桩
+    ```go
+    // 1. 初始化 mock控制器
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    
+    // 2. 初始化mock对象，并注入控制器
+    mockRepo := mock_gomock_db.NewMockRepository(ctrl)
+    
+    // 3. 设定mock对象的返回值
+    mockRepo.EXPECT().Create("name", []byte("jasper")).Return(nil)
+    ```
+3. 然后，测你要测的逻辑
+    ```go
+    // when
+    demoSvr := &gomock_service.DemoService{Repo: mockRepo}
+    data, err := demoSvr.InsertData("name", "jasper")
+    // then
+    assert.Equal(t, "success", data)
+    assert.Nil(t, err)
+    ```
+
+## 接口打桩定义前N次返回值
+```go
+// 前两次返回错误
+mockRepo.EXPECT().Create("name", []byte("jasper")).Return(errors.New("db connection error")).Times(2)
+// 第三次正常
+mockRepo.EXPECT().Create("name", []byte("jasper")).Return(nil)
+```
+
+
+## 断言接口调用顺序
+方式一：`After`
+```go
+// retrieve 先执行
+retrieveName := mockRepo.EXPECT().Retrieve("name").Return([]byte("jasper"), nil)
+// update 在 retrieve 之后
+mockRepo.EXPECT().Update("name", []byte("mike")).Return(nil).After(retrieveName) 
+```
+方式二：
+```go
+gomock.InOrder(
+    // retrieve 先执行
+    mockRepo.EXPECT().Retrieve("name").Return([]byte("jasper"), nil),
+    // update 在 retrieve 之后
+    mockRepo.EXPECT().Update("name", []byte("mike")).Return(nil),
+)
+```
