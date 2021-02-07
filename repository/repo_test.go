@@ -6,10 +6,9 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"go-mock-best-practice/adapter"
 	"go-mock-best-practice/repository"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 	"regexp"
 	"testing"
+	"xorm.io/xorm"
 )
 
 func TestMySQLRepository_CreateStudent(t *testing.T) {
@@ -23,20 +22,11 @@ func TestMySQLRepository_CreateStudent(t *testing.T) {
 				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 			}
 			defer db.Close()
-
-			dialector := mysql.New(mysql.Config{
-				DSN:                       "sqlmock_db_0",
-				DriverName:                "mysql",
-				Conn:                      db,
-				SkipInitializeWithVersion: true,
-			})
-			gormDB, err := gorm.Open(dialector, &gorm.Config{})
-			if err != nil {
-				t.Fatalf("Failed to open gorm v2 db, got error: %v", err)
-			}
+			mockEngine, err := xorm.NewEngine("mysql", "root:123@/test?charset=utf8mb4")
+			mockEngine.DB().DB = db
 
 			// 注意：这里是打桩的关键：将mock的db对象，作为Open函数的返回
-			stubs := gostub.StubFunc(&adapter.Open, gormDB, nil)
+			stubs := gostub.StubFunc(&adapter.Open, mockEngine, nil)
 			defer stubs.Reset()
 
 			mock.ExpectBegin()
@@ -73,27 +63,18 @@ func TestMySQLRepository_GetStudents(t *testing.T) {
 				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 			}
 			defer db.Close()
-
-			dialector := mysql.New(mysql.Config{
-				DSN:                       "sqlmock_db_0",
-				DriverName:                "mysql",
-				Conn:                      db,
-				SkipInitializeWithVersion: true,
-			})
-			gormDB, err := gorm.Open(dialector, &gorm.Config{})
-			if err != nil {
-				t.Fatalf("Failed to open gorm v2 db, got error: %v", err)
-			}
+			mockEngine, err := xorm.NewEngine("mysql", "root:123@/test?charset=utf8mb4")
+			mockEngine.DB().DB = db
 
 			// 注意：这里是打桩的关键：将mock的db对象，作为Open函数的返回
-			stubs := gostub.StubFunc(&adapter.Open, gormDB, nil)
+			stubs := gostub.StubFunc(&adapter.Open, mockEngine, nil)
 			defer stubs.Reset()
 
 			rows := sqlmock.NewRows([]string{"name"}).
 				AddRow("Jim").
 				AddRow("Jimmy")
 
-			mock.ExpectQuery(regexp.QuoteMeta("SELECT `name` FROM `students` WHERE name LIKE ? LIMIT 2")).WillReturnRows(rows)
+			mock.ExpectQuery(regexp.QuoteMeta("SELECT name FROM `students` WHERE (name LIKE ?) LIMIT 2")).WillReturnRows(rows)
 
 			//---------------------------------------
 			// when
@@ -114,9 +95,8 @@ func TestMySQLRepository_GetStudents(t *testing.T) {
 	})
 }
 
-//
 //func TestNewMySQLRepository(t *testing.T) {
-//	student, err := repository.NewMySQLRepository().CreateStudent("jim")
+//	student, err := repository.NewMySQLRepository().CreateStudent("jasper")
 //	fmt.Printf("%v\n", student)
 //	fmt.Printf("%v\n", err)
 //}

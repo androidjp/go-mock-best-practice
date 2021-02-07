@@ -1,7 +1,7 @@
 package adapter
 
 import (
-	"gorm.io/gorm"
+	"xorm.io/xorm"
 )
 
-var Open = gorm.Open
+var Open = xorm.NewEngine
