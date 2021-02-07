@@ -1,26 +1,21 @@
 package repository
 
 import (
-	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
 	"go-mock-best-practice/adapter"
 	"go-mock-best-practice/entities"
-	"time"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 type MySQLRepository struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
 func NewMySQLRepository() *MySQLRepository {
-	db, err := adapter.Open("mysql", "root:root@tcp(192.168.200.128:3307)/test?charset=utf8mb4")
+	db, err := adapter.Open(mysql.Open("root:root@tcp(192.168.200.128:3307)/test?charset=utf8mb4"), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
-	db.SetConnMaxLifetime(time.Minute * 2)
-	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(10)
-
 	return &MySQLRepository{
 		db: db,
 	}
@@ -28,33 +23,25 @@ func NewMySQLRepository() *MySQLRepository {
 
 func (m *MySQLRepository) CreateStudent(name string) (stu *entities.Student, err error) {
 	// 启动事务
-	tx, err := m.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-
-	defer func() {
-		switch err {
-		case nil:
-			err = tx.Commit()
-		default:
-			tx.Rollback()
+	err = m.db.Transaction(func(tx *gorm.DB) error {
+		// 1. 先新增一个学生信息
+		newStudent := &entities.Student{
+			Name: name,
 		}
-	}()
+		if err := tx.Create(newStudent).Error; err != nil {
+			return err
+		}
 
-	// 1. 先新增一个学生信息
-	result, err := m.db.Exec("insert into students(name) values(?)", name)
-	if err != nil {
-		return
-	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return
-	}
-	// 2. 然后，给教室1 添加这个学生
-	if _, err = m.db.Exec("insert into classroom_1(stu_id) values(?)", id); err != nil {
-		return
-	}
-	stu = &entities.Student{ID: id, Name: name}
+		// 2. 然后，给教室1 添加这个学生
+		classroomInfo := &entities.Classroom{
+			StudentID: newStudent.ID,
+		}
+		if err = tx.Create(classroomInfo).Error; err != nil {
+			return err
+		}
+
+		stu = newStudent
+		return nil
+	})
 	return
 }

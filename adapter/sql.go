@@ -1,5 +1,7 @@
 package adapter
 
-import "database/sql"
+import (
+	"gorm.io/gorm"
+)
 
-var Open = sql.Open
+var Open = gorm.Open
