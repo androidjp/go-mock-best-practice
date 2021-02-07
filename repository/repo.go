@@ -45,3 +45,10 @@ func (m *MySQLRepository) CreateStudent(name string) (stu *entities.Student, err
 	})
 	return
 }
+
+// 查询name中带有相关关键字的N个学生
+func (m *MySQLRepository) GetStudents(key string, limit int) ([]*entities.Student, error) {
+	var stu []*entities.Student
+	err := m.db.Select("name").Where("name LIKE ?", key).Limit(limit).Find(&stu).Error
+	return stu, err
+}

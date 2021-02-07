@@ -62,6 +62,58 @@ func TestMySQLRepository_CreateStudent(t *testing.T) {
 	})
 }
 
+func TestMySQLRepository_GetStudents(t *testing.T) {
+	Convey("should return `Jim` and `Jimmy`", t, func() {
+		Convey("when find by key `Ji%` and limit 2", func() {
+			//---------------------------------------
+			// given
+			//---------------------------------------
+			db, mock, err := sqlmock.New()
+			if err != nil {
+				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+			}
+			defer db.Close()
+
+			dialector := mysql.New(mysql.Config{
+				DSN:                       "sqlmock_db_0",
+				DriverName:                "mysql",
+				Conn:                      db,
+				SkipInitializeWithVersion: true,
+			})
+			gormDB, err := gorm.Open(dialector, &gorm.Config{})
+			if err != nil {
+				t.Fatalf("Failed to open gorm v2 db, got error: %v", err)
+			}
+
+			// 注意：这里是打桩的关键：将mock的db对象，作为Open函数的返回
+			stubs := gostub.StubFunc(&adapter.Open, gormDB, nil)
+			defer stubs.Reset()
+
+			rows := sqlmock.NewRows([]string{"name"}).
+				AddRow("Jim").
+				AddRow("Jimmy")
+
+			mock.ExpectQuery(regexp.QuoteMeta("SELECT `name` FROM `students` WHERE name LIKE ? LIMIT 2")).WillReturnRows(rows)
+
+			//---------------------------------------
+			// when
+			//---------------------------------------
+			students, err := repository.NewMySQLRepository().GetStudents("Ji%", 2)
+
+			//---------------------------------------
+			// then
+			//---------------------------------------
+			So(err, ShouldBeNil)
+			So(students, ShouldNotBeNil)
+			So(students, ShouldHaveLength, 2)
+			So(students[0].Name, ShouldEqual, "Jim")
+			So(students[1].Name, ShouldEqual, "Jimmy")
+			So(students[0].ID, ShouldEqual, 0)
+			So(students[1].ID, ShouldEqual, 0)
+		})
+	})
+}
+
 //
 //func TestNewMySQLRepository(t *testing.T) {
 //	student, err := repository.NewMySQLRepository().CreateStudent("jim")
