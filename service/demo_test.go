@@ -56,7 +56,8 @@ func TestDemoService_AddStudentByName(t *testing.T) {
 			}
 			defer db.Close()
 			// 注意：这里是打桩的关键：将mock的db对象，作为Open函数的返回
-			gostub.StubFunc(&adapter.Open, db, nil)
+			stubs := gostub.StubFunc(&adapter.Open, db, nil)
+			defer stubs.Reset()
 
 			mock.ExpectBegin()
 			mock.ExpectExec(regexp.QuoteMeta(`insert into students(name) values(?)`)).WithArgs("mike").WillReturnResult(sqlmock.NewResult(1, 1))
